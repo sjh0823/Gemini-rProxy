@@ -106,13 +106,13 @@ python app.py
 ### 5. 测试
 
 *   **访问测试页面：** 在浏览器中打开 `http://127.0.0.1:3000/` (如果使用了默认端口)。
-*   **发送 API 请求：** 使用 curl、Postman 或其他工具向 `/hf/v1/chat/completions` 发送 POST 请求，测试 API 是否正常工作。记得在请求头中添加 `Authorization: Bearer your_password`。
+*   **发送 API 请求：** 使用 curl、Postman 或其他工具向 `/v1/chat/completions` 发送 POST 请求，测试 API 是否正常工作。记得在请求头中添加 `Authorization: Bearer your_password`。
 
 ### 6. API 参考
 
-*   `/hf/v1/chat/completions`:   OpenAI Chat Completions API。
-*   `/hf/v1/models`:  列出支持的 Gemini 模型。
-
+*   `/v1/chat/completions`:   OpenAI Chat Completions API。
+*   `/v1/models`:  列出支持的 Gemini 模型。
+*   `http://127.0.0.1:3000/v1`:    在各类前端或者项目中使用的URL
 请求和响应格式与 OpenAI API 基本兼容，但请注意，本项目是 Gemini 模型的代理，而不是 OpenAI 服务的代理。
 
 ### Docker 方式（可选）
