@@ -60,7 +60,7 @@ pip install -r requirements.txt
 **`.env` 示例：**
 
 ```
-KeyArray=AIzaSy...\nAIzaSy...\nAIzaSy...
+KeyArray="AIzaSy...\nAIzaSy...\nAIzaSy..."
 MaxRetries=3
 MaxRequests=2
 LimitWindow=60
