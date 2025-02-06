@@ -112,7 +112,7 @@ python app.py
 
 *   `/v1/chat/completions`:   OpenAI Chat Completions API。
 *   `/v1/models`:  列出支持的 Gemini 模型。
-*   `http://127.0.0.1:3000/v1`:    在各类前端或者项目中使用的URL
+*   `http://127.0.0.1:3000/v1`:    在各类前端或者项目中使用的URL，记得端口是否正确
 请求和响应格式与 OpenAI API 基本兼容，但请注意，本项目是 Gemini 模型的代理，而不是 OpenAI 服务的代理。
 
 ### Docker 方式（可选）
