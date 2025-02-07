@@ -16,7 +16,7 @@
 *   **安全设置：** 可配置 Gemini 模型的安全设置（当前版本默认关闭了所有安全过滤）。
 *   **系统代理支持：** 自动检测并使用系统代理设置，或通过环境变量手动配置代理。
 *   **跨平台：** 可作为 Python 脚本直接运行，在众多云服务器或本地环境进行使用，也可打包成独立的 .exe 文件（Windows）。
-*   **易于配置：** 通过 `env.json` 或 `.env` 文件进行配置。（当前json文件的读取有点问题，请使用.env文件进行配置）
+*   **易于配置：** 通过`.env` 文件进行配置。
 
 ## 快速开始
 
@@ -40,34 +40,18 @@ pip install -r requirements.txt
 
 ### 4. 配置
 
-在项目根目录下创建 `env.json` 或 `.env` 文件，并设置以下环境变量：
-
-**`env.json` 示例：**
-
-```json
-{
-  "KeyArray": "AIzaSy...\nAIzaSy...\nAIzaSy...",  
-  "MaxRetries": 3,            
-  "MaxRequests": 2,           
-  "LimitWindow": 60,          
-  "password": "your_password", 
-  "PORT": 3000,               
-  "http_proxy": "http://your_proxy:port", 
-  "https_proxy": "https://your_proxy:port" 
-}
-```
+在项目根目录下创建 `.env` 文件，并设置以下环境变量：
 
 **`.env` 示例：**
 
 ```
-KeyArray="AIzaSy...\nAIzaSy...\nAIzaSy..."
+KeyArray="your_key_1
+  your_key_2 your_key_3"  # 你的 Google API 密钥列表，用空格或者换行分隔，注意最好不要删掉引号
 MaxRetries=3
 MaxRequests=2
 LimitWindow=60
-password=your_password
+password="yor_password"  # 设置一个用于 API 认证的密码
 PORT=3000
-http_proxy=http://your_proxy:port
-https_proxy=https://your_proxy:port
 ```
 
 **说明：**
@@ -97,11 +81,11 @@ python app.py
     pyinstaller --onefile --name gemini-proxy --add-data="func.py;." app.py
     ```
 
-2.  **运行：**  将 `env.json` 或 `.env` 文件复制到 `dist` 目录下，与 `gemini-proxy.exe` 放在一起，然后双击运行 `gemini-proxy.exe`。
+2.  **运行：**  将`.env` 文件复制到 `dist` 目录下，与 `gemini-proxy.exe` 放在一起，然后双击运行 `gemini-proxy.exe`。
 
 ### 注意
 
-*   根目录下的`./dist`文件夹中以打包好.exe文件，可直接使用，同样要注意`env.json` 或 `.env` 文件和.exe文件存在同一个文件夹中
+*   根目录下的`./dist`文件夹中以打包好.exe文件，可直接使用，同样要注意`.env` 文件和.exe文件存在同一个文件夹中
 
 ### 5. 测试
 

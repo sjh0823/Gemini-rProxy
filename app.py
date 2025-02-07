@@ -4,9 +4,11 @@ from google.api_core.exceptions import InvalidArgument, ResourceExhausted, Abort
 import google.generativeai as genai
 import json
 import os
+from dotenv import load_dotenv
 import re
 import logging
 import func
+import yaml
 from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 import time
@@ -64,42 +66,43 @@ safety_settings = [
 # 从 env.json 或 .env 加载环境变量
 def load_config():
     config = {}
-    key_array_from_json = None
-    key_array_from_env = None
 
-    # 尝试从 env.json 加载
-    try:
-        with open("env.json", "r") as f:
-            config_json = json.load(f)
-            if "KeyArray" in config_json:
-                key_array_from_json = config_json["KeyArray"]
-                if isinstance(key_array_from_json, str):
-                    key_array_from_json = key_array_from_json.splitlines()
-                config.update(config_json)  # 使用 update 合并配置
-    except FileNotFoundError:
-        pass
-
-    # 尝试从 .env 加载
-    from dotenv import load_dotenv
+    # 从 .env 加载
     load_dotenv()
     config_env = {key: os.environ.get(key) for key in
                   ["KeyArray", "MaxRetries", "MaxRequests", "LimitWindow", "password", "PORT"]}
-    if "KeyArray" in config_env and config_env["KeyArray"]:
-        key_array_from_env = config_env["KeyArray"].splitlines()
-    config.update(config_env)  # 使用 update 合并配置
 
-    # 检查 KeyArray 是否都为 "your_key" 或缺失
-    if (key_array_from_json == "your_key" or (isinstance(key_array_from_json, list) and all(
-            k.strip() == "your_key" for k in key_array_from_json)) or key_array_from_json is None) and \
-            (key_array_from_env == "your_key" or (isinstance(key_array_from_env, list) and all(
-                k.strip() == "your_key" for k in key_array_from_env)) or key_array_from_env is None):
-        print("错误：请在 env.json 或 .env 文件中将 KeyArray 的值替换为您的 Google API 密钥。或检查是否有这两个文件。")
+    # KeyArray 格式检查和处理
+    if "KeyArray" in config_env and config_env["KeyArray"]:
+        raw_key_string = config_env["KeyArray"]
+        keys = raw_key_string.replace('\n', ' ').split()  # 支持空格和换行分割
+        valid_keys = []
+        for key in keys:
+            key = key.strip()
+            if re.match(r"AIzaSy[a-zA-Z0-9_-]{33}", key):  # 正则表达式检查
+                valid_keys.append(key)
+            else:
+                print(f"警告：无效的 API Key 格式：{key}，已忽略。") #给出警告
+
+        config_env["KeyArray"] = valid_keys if valid_keys else []  # 如果有有效 key，则赋值；否则为空列表
+        #或者, 如果希望有一个key无效就全部无效:
+        #if valid_keys and len(valid_keys) == len(keys):  #所有key都有效才赋值
+        #    config_env["KeyArray"] = valid_keys
+        #else:
+        #    config_env["KeyArray"] = []
+        #    print("警告: KeyArray 中存在无效的 API Key，已全部设为空。")
+    else:
+          config_env["KeyArray"] = [] #没有KeyArray则设置为空列表
+
+    config.update(config_env)
+
+    # 检查 KeyArray 是否为空或都为 "your_key"
+    key_array = config.get("KeyArray")  # 使用 get，避免 KeyError
+
+    if not key_array or all(k.strip() == "your_key" for k in key_array):
+        print("错误：请在 .env 文件中将 KeyArray 的值替换为您的 Google API 密钥，并确保格式正确。")
         input("按 Enter 键退出...")
         exit(1)
-
-    # 确保 KeyArray 是一个列表
-    if "KeyArray" in config and isinstance(config["KeyArray"], str):
-        config["KeyArray"] = config["KeyArray"].splitlines()
 
     return config
 
@@ -133,27 +136,48 @@ def get_system_proxy(url="http://example.com"):  # get_environ_proxies 需要一
     return proxy
 
 class APIKeyManager:
-    def __init__(self):
-        if isinstance(config["KeyArray"], list):
-             self.api_keys = [key for key in config["KeyArray"] if re.match(r"AIzaSy[a-zA-Z0-9_-]{33}", key)]
-        elif isinstance(config["KeyArray"], str):
-            self.api_keys = [key for key in config["KeyArray"].splitlines() if re.match(r"AIzaSy[a-zA-Z0-9_-]{33}", key)]
-        else:
-            self.api_keys = []  # 或者根据需要处理 None 或其他类型
-        self.current_index = random.randint(0, len(self.api_keys) - 1) if self.api_keys else 0
+    def __init__(self, config):  # 传入 config 对象
+        self.api_keys = []
+        key_array = config.get("KeyArray")
+
+        if key_array:  # 避免 KeyArray 不存在的情况
+            if isinstance(key_array, str):
+                key_array = [key_array] #统一为列表
+
+            for key in key_array:
+                key = key.strip() # 去除首尾空格
+                if re.match(r"AIzaSy[a-zA-Z0-9_-]{33}", key):
+                    self.api_keys.append(key)
+                else:
+                    logger.warning(f"无效的 API Key 格式: {key}")  # 给出无效 key 的警告
+
+        if not self.api_keys:
+            logger.error("没有找到有效的 API Key。请检查配置。")
+            # 可选：抛出异常，或者直接 exit(1)
+            # raise ValueError("No valid API keys found.")
+            # exit(1)
+
+        # 初始索引，如果列表为空，则设置为 -1（表示没有可用 key）
+        self.current_index = random.randint(0, len(self.api_keys) - 1) if self.api_keys else -1
+
 
     def get_available_key(self):
+        if not self.api_keys:  # 先检查是否有 key
+            return None
+
         num_keys = len(self.api_keys)
         for _ in range(num_keys):
-            if self.current_index >= num_keys:
+            # 如果 current_index 为 -1 (初始状态或所有 key 都被 blacklist)，从 0 开始
+            if self.current_index == -1 or self.current_index >= num_keys :
                 self.current_index = 0
+
             current_key = self.api_keys[self.current_index]
             self.current_index += 1
 
             if current_key not in api_key_blacklist:
                 return current_key
 
-        logger.error("所有API key都已耗尽或被暂时禁用或没有任意一个有效API key，请重新配置或稍后重试。")
+        logger.error("所有API key都已耗尽或被暂时禁用，请重新配置或稍后重试。")
         return None
 
     def show_all_keys(self):
@@ -161,13 +185,17 @@ class APIKeyManager:
         for i, api_key in enumerate(self.api_keys):
             logger.info(f"API Key{i}: {api_key[:11]}...")
 
+
     def blacklist_key(self, key):
-        logger.warning(f"{key[:11]} → 暂时禁用 {api_key_blacklist_duration} 秒")
+        logger.warning(f"{key[:11]}... → 暂时禁用 {api_key_blacklist_duration} 秒")
         api_key_blacklist.add(key)
+        scheduler.add_job(
+            lambda: api_key_blacklist.discard(key),
+            'date',
+            run_date=datetime.now() + timedelta(seconds=api_key_blacklist_duration)
+        )
 
-        scheduler.add_job(lambda: api_key_blacklist.discard(key), 'date', run_date=datetime.now() + timedelta(seconds=api_key_blacklist_duration))
-
-key_manager = APIKeyManager()
+key_manager = APIKeyManager(config)
 key_manager.show_all_keys()
 current_api_key = key_manager.get_available_key()
 
