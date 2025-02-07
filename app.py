@@ -222,7 +222,9 @@ GEMINI_MODELS = [
     {"id": "gemini-exp-1121"},
     {"id": "gemini-exp-1206"},
     {"id": "gemini-2.0-flash-exp"},
+    {"id": "gemini-2.0-flash-lite-preview-02-05"},
     {"id": "gemini-2.0-flash-thinking-exp-1219"},
+    {"id": "gemini-2.0-flash-thinking-exp-01-21"},
     {"id": "gemini-2.0-pro-exp"},
     {"id": "gemini-2.0-pro-exp-02-05"}
 ]
