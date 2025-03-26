@@ -227,7 +227,7 @@ GEMINI_MODELS = [
     {"id": "gemini-2.0-flash-thinking-exp-01-21"},
     {"id": "gemini-2.0-pro-exp"},
     {"id": "gemini-2.0-pro-exp-02-05"}
-    {"id": "gemini-2.5-pro-exp-03-19"}
+    {"id": "gemini-2.5-pro-exp-03-25"}
 ]
 
 #print("Loaded Configuration:", config)  # 打印配置
